@@ -1,0 +1,56 @@
+---
+title: "City Permits"
+author: "Alan Jackson"
+date: "June 25, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library("tidyverse")
+library("stringr") # string tools
+library("lettercase") # fiddle with letter case
+library("lubridate")
+
+options(stringsAsFactors = FALSE)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read in the downloaded file
+
+A file may be downloaded from https://cohgis-mycity.opendata.arcgis.com/datasets/permits-wm-structural?geometry=-97.509%2C29.379%2C-93.263%2C30.213
+
+We'll read it in. It is already (mostly) geocoded, so we'll skip that step.
+
+
+```{r read report}
+
+infile <- "/home/ajackson/Dropbox/Rprojects/CityPermits/Permits_wm_Structural.csv"
+
+Permits <- read_csv(infile) %>% 
+  select(X, Y, OBJECTID, Match_addr, PROJ_DESC, RECORDED_DATE) %>%
+  drop_na(X)
+  
+#   rename columns
+
+names(Permits) <- c("Lon", "Lat", "ID", "Address", "Description", "Date")
+
+
+```
+
+## Save output
+
+
+```{r Save output, echo=FALSE}
+
+saveRDS(rpt, paste("~/Dropbox/Rprojects/CityPermits/StructuralPermits.rds", sep=""))
+
+```
+
+
+
+
+
+
+
+

@@ -1,0 +1,50 @@
+---
+title: "AnalyzePermits"
+author: "Alan Jackson"
+date: "June 29, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(leaflet)
+library(ggplot2)
+
+permits <- readRDS("~/Dropbox/Rprojects/CityPermits/2018_06_18_2018_06_25.rds")
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Basic statistics
+
+
+```{r basic stats}
+
+solar <- permits %>% 
+  filter(grepl("SOLAR", Comments))
+
+harvey <- permits %>%
+  filter(grepl("HARVEY", Comments))
+
+```
+
+##  Map permits
+
+
+
+```{r map }
+
+permits$lat <- as.numeric(permits$lat)
+permits$lon <- as.numeric(permits$lon)
+
+pal <- colorFactor(c("navy", "red"), domain = c("Building Pmt", "DEMOLITION"))
+
+leaflet(permits) %>% addTiles() %>%
+  addCircleMarkers(popup = permits$Comments,
+                   color = ~pal(Permit_Type))
+
+
+  addMarkers(clusterOptions = markerClusterOptions(), popup=permits$Comments)
+```
+
+

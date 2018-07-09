@@ -1,0 +1,108 @@
+---
+title: "AnalyzePermits"
+author: "Alan Jackson"
+date: "June 29, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(leaflet)
+library(ggplot2)
+library("lubridate")
+library(ggmap)
+
+
+permits <- readRDS("~/Dropbox/Rprojects/CityPermits/StructuralPermits.rds")
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Basic statistics
+
+
+```{r basic stats}
+
+solar <- permits %>% 
+  filter(grepl("SOLAR ", Description))
+
+solar %>%
+  mutate(ByMonth=floor_date(Date, "month")) %>%
+  group_by(ByMonth) %>%
+  summarise(MonthlyTotal=n()) %>%
+  ggplot(aes(x=ByMonth, y=MonthlyTotal))+
+  geom_point()+
+  geom_smooth()
+
+
+harvey <- permits %>%
+  filter(grepl("HARVEY", Description))
+
+```
+
+##  Map permits
+
+
+
+```{r map }
+
+permits$lat <- as.numeric(permits$lat)
+permits$lon <- as.numeric(permits$lon)
+
+pal <- colorFactor(c("navy", "red"), domain = c("Building Pmt", "DEMOLITION"))
+
+leaflet(harvey) %>% addTiles() %>%
+  addCircleMarkers(popup = harvey$Description,
+                   radius = 0.1)
+
+leaflet(solar) %>% addTiles() %>%
+  addCircleMarkers(popup = solar$Description,
+                   radius = 0.1)
+
+solarcentral <- solar %>%
+  filter(between(Lat, 29.65, 29.85) & between(Lon,-95.6, -95.3) )
+zoom <- 12
+center <- c(-95.45, 29.75)
+gmap = get_map(location=center, source="google", zoom=zoom)
+ggmap(gmap, extent='normal', maprange=FALSE, show.legend=FALSE) %+%
+    solarcentral %+%
+    aes(x = Lon, y = Lat) +
+    geom_point() +
+    labs(title="Solar Panel Permits")
+
+  addMarkers(clusterOptions = markerClusterOptions(), popup=permits$Comments)
+```
+
+```{r animated harvey map}
+
+zoom <- 10
+center <- c(-95.4, 29.8)
+gmap = get_map(location=center, source="google", zoom=zoom)
+
+one_week <- function(Week) {
+  ggmap(gmap, extent='normal', maprange=FALSE, show.legend=FALSE) %+%
+    harvey %+%
+    aes(x = Lon, y = Lat) +
+    geom_point(data=harvey[harvey$Week==Week,]) +
+    labs(title=paste("Harvey Permits",Week))
+  ggsave(filename = paste0("/home/ajackson/Dropbox/Rprojects/CityPermits/fig_output/harvey_",Week,".png"),
+    width = 8,height=8,dpi = 200)
+}
+
+library(purrr)
+
+sort(unique(harvey$Week)) %>%
+  map_df(one_week)
+
+output_dir <- "/home/ajackson/Dropbox/Rprojects/CityPermits"
+
+library(magick)
+list.files(path = paste0(output_dir,"/fig_output/"), pattern = "*.png", full.names = T) %>%
+  map(image_read) %>% # reads each path file
+  image_join() %>% # joins image
+  image_animate(fps=2) %>% # animates, can opt for number of loops
+  image_write("HarveyAnimation.gif") # write to current dir
+
+
+```
+
