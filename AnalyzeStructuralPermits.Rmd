@@ -13,7 +13,14 @@ library("lubridate")
 library(ggmap)
 
 
-permits <- readRDS("~/Dropbox/Rprojects/CityPermits/StructuralPermits.rds")
+#permits <- readRDS("~/Dropbox/Rprojects/CityPermits/StructuralPermits.rds")
+
+permits <- list.files(path="~/Rprojects/CityPermits",
+                      pattern="^201[89].*rds$") %>%
+  purrr::set_names(.) %>%
+  map_dfr(readRDS) %>%
+  rename(Description=Comments, Date=Permit_Date)
+
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
